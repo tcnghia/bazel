@@ -77,8 +77,8 @@ fi
   cd $PACKAGE_DIR
   unzip -q -d platforms $WORKDIR/$PLATFORMS_ARCHIVE
   cd platforms
-  mv external/platforms/* .
-  rmdir -p external/platforms
+#  mv external/platforms/* .
+#  rmdir -p external/platforms
   >> WORKSPACE
 )
 

@@ -289,7 +289,7 @@ abstract class AbstractSandboxSpawnRunner implements SpawnRunner {
     // On Windows, sandboxExecRoot is actually the main execroot. We will specify
     // exactly which output path is writable.
     if (OS.getCurrent() != OS.WINDOWS) {
-      writablePaths.add(sandboxExecRoot);
+      writablePaths.add(sandboxExecRoot.getParentDirectory());
     }
 
     String testTmpdir = env.get("TEST_TMPDIR");

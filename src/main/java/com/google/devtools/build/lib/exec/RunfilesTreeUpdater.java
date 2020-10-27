@@ -95,7 +95,7 @@ public class RunfilesTreeUpdater {
     }
 
     SymlinkTreeHelper helper =
-        new SymlinkTreeHelper(inputManifest, runfilesDirPath, /* filesetTree= */ false);
+        new SymlinkTreeHelper(RunfilesSupport.inputManifestPathFragment(runfilesDir), runfilesDir, /* filesetTree= */ false);
     helper.createSymlinks(execRoot, outErr, binTools, env, enableRunfiles);
   }
 

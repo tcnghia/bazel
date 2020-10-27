@@ -52,8 +52,8 @@ public final class SymlinkTreeHelper {
   @VisibleForTesting
   public static final String BUILD_RUNFILES = "build-runfiles" + OsUtils.executableExtension();
 
-  private final Path inputManifest;
-  private final Path symlinkTreeRoot;
+  private final PathFragment inputManifest;
+  private final PathFragment symlinkTreeRoot;
   private final boolean filesetTree;
 
   /**
@@ -64,14 +64,14 @@ public final class SymlinkTreeHelper {
    * @param filesetTree true if this is fileset symlink tree, false if this is a runfiles symlink
    *     tree.
    */
-  public SymlinkTreeHelper(Path inputManifest, Path symlinkTreeRoot, boolean filesetTree) {
+  public SymlinkTreeHelper(PathFragment inputManifest, PathFragment symlinkTreeRoot, boolean filesetTree) {
     this.inputManifest = inputManifest;
     this.symlinkTreeRoot = symlinkTreeRoot;
     this.filesetTree = filesetTree;
   }
 
-  private Path getOutputManifest() {
-    return symlinkTreeRoot.getChild("MANIFEST");
+  private Path getOutputManifest(Path execRoot) {
+    return execRoot.getRelative(symlinkTreeRoot).getChild("MANIFEST");
   }
 
   /** Creates a symlink tree by making VFS calls. */
@@ -132,16 +132,16 @@ public final class SymlinkTreeHelper {
     if (enableRunfiles) {
       createSymlinksUsingCommand(execRoot, binTools, shellEnvironment, outErr);
     } else {
-      copyManifest();
+      copyManifest(execRoot);
     }
   }
 
   /** Copies the input manifest to the output manifest. */
-  public void copyManifest() throws ExecException {
+  public void copyManifest(Path execRoot) throws ExecException {
     // Pretend we created the runfiles tree by copying the manifest
     try {
-      symlinkTreeRoot.createDirectoryAndParents();
-      FileSystemUtils.copyFile(inputManifest, getOutputManifest());
+      execRoot.getRelative(symlinkTreeRoot).createDirectoryAndParents();
+      FileSystemUtils.copyFile(execRoot.getRelative(inputManifest), getOutputManifest(execRoot));
     } catch (IOException e) {
       throw new EnvironmentalExecException(e, Code.SYMLINK_TREE_MANIFEST_COPY_IO_EXCEPTION);
     }
@@ -184,8 +184,8 @@ public final class SymlinkTreeHelper {
       args.add("--allow_relative");
       args.add("--use_metadata");
     }
-    args.add(inputManifest.relativeTo(execRoot).getPathString());
-    args.add(symlinkTreeRoot.relativeTo(execRoot).getPathString());
+    args.add(inputManifest.getPathString());
+    args.add(symlinkTreeRoot.getPathString());
     return new CommandBuilder()
         .addArgs(args)
         .setWorkingDir(execRoot)

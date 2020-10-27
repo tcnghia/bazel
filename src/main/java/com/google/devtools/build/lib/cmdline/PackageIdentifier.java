@@ -182,7 +182,7 @@ public final class PackageIdentifier implements Comparable<PackageIdentifier>, S
    * main repository or external/[repository name]/[pkgName] if not.
    */
   public PathFragment getPackagePath(boolean siblingRepositoryLayout) {
-    return repository.getPackagePath().getRelative(pkgName);
+    return siblingRepositoryLayout ? pkgName : repository.getPackagePath().getRelative(pkgName);
   }
 
   public PathFragment getExecPath(boolean siblingRepositoryLayout) {

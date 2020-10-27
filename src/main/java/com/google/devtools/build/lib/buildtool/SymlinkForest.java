@@ -148,15 +148,17 @@ public class SymlinkForest {
     // From <output_base>/execroot/<external repo name>
     // to   <output_base>/external/<external repo name>
     Path execrootLink = execroot.getRelative(repository.getExecPath(siblingRepositoryLayout));
-
-    if (!siblingRepositoryLayout && externalRepoLinks.isEmpty()) {
-      execroot.getRelative(LabelConstants.EXTERNAL_PATH_PREFIX).createDirectoryAndParents();
-    }
     if (!externalRepoLinks.add(execrootLink)) {
       return;
     }
-    execrootLink.createSymbolicLink(source);
-    plantedSymlinks.add(execrootLink);
+    execrootLink.createDirectoryAndParents();
+
+    for (Path target : source.getDirectoryEntries()) {
+      String baseName = target.getBaseName();
+      Path execPath = execrootLink.getRelative(baseName);
+      execPath.createSymbolicLink(target);
+      plantedSymlinks.add(execPath);
+    }
   }
 
   private void plantSymlinkForestWithFullMainRepository(

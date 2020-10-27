@@ -253,6 +253,15 @@ public final class RunfilesSupport {
     return FileSystemUtils.replaceExtension(inputManifest.getPath(), RUNFILES_DIR_EXT);
   }
 
+  @Nullable
+  public PathFragment getRunfilesDirectoryFragment() {
+    Artifact inputManifest = getRunfilesInputManifest();
+    if (inputManifest == null) {
+      return null;
+    }
+    return FileSystemUtils.replaceExtension(inputManifest.getExecPath(), RUNFILES_DIR_EXT);
+  }
+
   /**
    * Returns the files pointed to by the symlinks in the runfiles symlink farm. This method is slow.
    */
@@ -436,6 +445,10 @@ public final class RunfilesSupport {
 
   /** Returns the path of the input manifest of {@code runfilesDir}. */
   public static Path inputManifestPath(Path runfilesDir) {
+    return FileSystemUtils.replaceExtension(runfilesDir, INPUT_MANIFEST_EXT);
+  }
+
+  public static PathFragment inputManifestPathFragment(PathFragment runfilesDir) {
     return FileSystemUtils.replaceExtension(runfilesDir, INPUT_MANIFEST_EXT);
   }
 

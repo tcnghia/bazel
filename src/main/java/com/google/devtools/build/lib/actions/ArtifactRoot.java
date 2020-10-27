@@ -85,7 +85,7 @@ public final class ArtifactRoot implements Comparable<ArtifactRoot>, Serializabl
     for (String prefix : prefixes) {
       // Tests can have empty segments here, be gentle to them.
       if (!prefix.isEmpty()) {
-        execPath = execPath.getChild(prefix);
+        execPath = execPath.getRelative(prefix);
       }
     }
     return asDerivedRoot(execRoot, execPath);
@@ -100,10 +100,10 @@ public final class ArtifactRoot implements Comparable<ArtifactRoot>, Serializabl
   public static ArtifactRoot asDerivedRoot(Path execRoot, PathFragment execPath) {
     // Make sure that we are not creating a derived artifact under the execRoot.
     Preconditions.checkArgument(!execPath.isEmpty(), "empty execPath");
-    Preconditions.checkArgument(
-        !execPath.getSegments().contains(".."),
-        "execPath: %s contains parent directory reference (..)",
-        execPath);
+    // Preconditions.checkArgument(
+    //     !execPath.getSegments().contains(".."),
+    //     "execPath: %s contains parent directory reference (..)",
+    //     execPath);
     Path root = execRoot.getRelative(execPath);
     return INTERNER.intern(new ArtifactRoot(Root.fromPath(root), execPath, RootType.Output));
   }
@@ -113,6 +113,11 @@ public final class ArtifactRoot implements Comparable<ArtifactRoot>, Serializabl
     Preconditions.checkArgument(root.startsWith(execRoot));
     Preconditions.checkArgument(!root.equals(execRoot));
     PathFragment execPath = root.relativeTo(execRoot);
+    return INTERNER.intern(new ArtifactRoot(Root.fromPath(root), execPath, RootType.Middleman));
+  }
+
+  public static ArtifactRoot middlemanRoot(Path execRoot, PathFragment execPath) {
+    Path root = execRoot.getRelative(execPath).getRelative("internal");
     return INTERNER.intern(new ArtifactRoot(Root.fromPath(root), execPath, RootType.Middleman));
   }
 

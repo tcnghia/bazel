@@ -529,6 +529,10 @@ public class CommandEnvironment {
     return getDirectories().getExecRoot(workspaceName);
   }
 
+  public Path getExecRootBase() {
+    return getDirectories().getExecRootBase();
+  }
+
   /**
    * Returns the directory where actions' temporary files will be written. Is below the directory
    * returned by {@link #getExecRoot}.

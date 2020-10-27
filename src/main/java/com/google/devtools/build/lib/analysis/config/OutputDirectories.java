@@ -25,6 +25,8 @@ import com.google.devtools.build.lib.vfs.FileSystemUtils;
 import com.google.devtools.build.lib.vfs.Path;
 import com.google.devtools.build.lib.vfs.PathFragment;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Logic for figuring out what base directories to place outputs generated from a given
@@ -131,8 +133,17 @@ public class OutputDirectories {
 
   private final boolean mergeGenfilesDirectory;
 
-  @SuppressWarnings("unused")
   private final boolean siblingRepositoryLayout;
+
+  private final Path execRoot;
+  private final RepositoryName mainRepository;
+
+  private final Map<RepositoryName, ArtifactRoot> binDirectoryRoots;
+  private final Map<RepositoryName, ArtifactRoot> includeDirectoryRoots;
+  private final Map<RepositoryName, ArtifactRoot> genfilesDirectoryRoots;
+  private final Map<RepositoryName, ArtifactRoot> coverageDirectoryRoots;
+  private final Map<RepositoryName, ArtifactRoot> testlogsDirectoryRoots;
+  private final Map<RepositoryName, ArtifactRoot> middlemanDirectoryRoots;
 
   OutputDirectories(
       BlazeDirectories directories,
@@ -161,6 +172,14 @@ public class OutputDirectories {
 
     this.mergeGenfilesDirectory = options.mergeGenfilesDirectory;
     this.siblingRepositoryLayout = siblingRepositoryLayout;
+    this.execRoot = directories.getExecRoot(mainRepositoryName.strippedName());
+    this.mainRepository = mainRepositoryName;
+    this.binDirectoryRoots = new ConcurrentHashMap<>();
+    this.includeDirectoryRoots = new ConcurrentHashMap<>();
+    this.genfilesDirectoryRoots = new ConcurrentHashMap<>();
+    this.coverageDirectoryRoots = new ConcurrentHashMap<>();
+    this.testlogsDirectoryRoots = new ConcurrentHashMap<>();
+    this.middlemanDirectoryRoots = new ConcurrentHashMap<>();
   }
 
   private String buildMnemonic(
@@ -178,6 +197,37 @@ public class OutputDirectories {
     return Joiner.on('-').skipNulls().join(nameParts);
   }
 
+  private ArtifactRoot buildRoot(
+      String outputDirName,
+      BlazeDirectories directories,
+      boolean middleman,
+      String nameFragment,
+      RepositoryName repository) {
+    // e.g., execroot/repo1/bazel-out/config/bin
+    if (middleman) {
+      PathFragment execPath =
+          PathFragment.create(isMainRepository(repository) ? "" : "..")
+              .getRelative(isMainRepository(repository) ? "" : repository.strippedName())
+              .getRelative(directories.getRelativeOutputPath())
+              .getRelative(outputDirName);
+      return ArtifactRoot.middlemanRoot(execRoot, execPath);
+    }
+    // e.g., [[execroot/repo1]/bazel-out/config/bin]
+    return ArtifactRoot.asDerivedRoot(
+        execRoot,
+        isMainRepository(repository) ? "" : "..",
+        isMainRepository(repository) ? "" : repository.strippedName(),
+        directories.getRelativeOutputPath(),
+        outputDirName,
+        nameFragment);
+  }
+
+  private boolean isMainRepository(RepositoryName repository) {
+    return repository == RepositoryName.MAIN
+        || repository == RepositoryName.DEFAULT
+        || repository.equals(mainRepository);
+  }
+
   /** Returns the output directory for this build configuration. */
   ArtifactRoot getOutputDirectory() {
     return outputDirectory;
@@ -185,17 +235,31 @@ public class OutputDirectories {
 
   /** Returns the bin directory for this build configuration. */
   ArtifactRoot getBinDirectory(RepositoryName repositoryName) {
-    return binDirectory;
+    return siblingRepositoryLayout
+        ? binDirectoryRoots.computeIfAbsent(
+            repositoryName, n -> buildRoot(outputDirName, directories, false, "bin", n))
+        : binDirectory;
   }
 
   /** Returns the include directory for this build configuration. */
   ArtifactRoot getIncludeDirectory(RepositoryName repositoryName) {
-    return includeDirectory;
+    return siblingRepositoryLayout
+        ? includeDirectoryRoots.computeIfAbsent(
+            repositoryName,
+            n ->
+                buildRoot(
+                    outputDirName, directories, false, BlazeDirectories.RELATIVE_INCLUDE_DIR, n))
+        : includeDirectory;
   }
 
   /** Returns the genfiles directory for this build configuration. */
   ArtifactRoot getGenfilesDirectory(RepositoryName repositoryName) {
-    return mergeGenfilesDirectory ? getBinDirectory(repositoryName) : genfilesDirectory;
+    return mergeGenfilesDirectory
+        ? getBinDirectory(repositoryName)
+        : siblingRepositoryLayout
+            ? genfilesDirectoryRoots.computeIfAbsent(
+                repositoryName, n -> buildRoot(outputDirName, directories, false, "genfiles", n))
+            : genfilesDirectory;
   }
 
   /**
@@ -204,12 +268,19 @@ public class OutputDirectories {
    * tools.
    */
   ArtifactRoot getCoverageMetadataDirectory(RepositoryName repositoryName) {
-    return coverageDirectory;
+    return siblingRepositoryLayout
+        ? coverageDirectoryRoots.computeIfAbsent(
+            repositoryName,
+            n -> buildRoot(outputDirName, directories, false, "coverage-metadata", n))
+        : coverageDirectory;
   }
 
   /** Returns the testlogs directory for this build configuration. */
   ArtifactRoot getTestLogsDirectory(RepositoryName repositoryName) {
-    return testlogsDirectory;
+    return siblingRepositoryLayout
+        ? testlogsDirectoryRoots.computeIfAbsent(
+            repositoryName, n -> buildRoot(outputDirName, directories, false, "testlogs", n))
+        : testlogsDirectory;
   }
 
   /** Returns a relative path to the genfiles directory at execution time. */
@@ -230,7 +301,10 @@ public class OutputDirectories {
 
   /** Returns the internal directory (used for middlemen) for this build configuration. */
   ArtifactRoot getMiddlemanDirectory(RepositoryName repositoryName) {
-    return middlemanDirectory;
+    return siblingRepositoryLayout
+        ? middlemanDirectoryRoots.computeIfAbsent(
+            repositoryName, n -> buildRoot(outputDirName, directories, true, "", n))
+        : middlemanDirectory;
   }
 
   String getMnemonic() {

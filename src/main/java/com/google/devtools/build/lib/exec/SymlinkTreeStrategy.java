@@ -107,7 +107,7 @@ public final class SymlinkTreeStrategy implements SymlinkTreeActionContext {
 
           createOutput(action, actionExecutionContext, inputManifest);
         } else if (!action.isRunfilesEnabled()) {
-          createSymlinkTreeHelper(action, actionExecutionContext).copyManifest();
+          createSymlinkTreeHelper(action, actionExecutionContext).copyManifest(actionExecutionContext.getExecRoot());
         } else if (action.getInputManifest() == null
             || (action.inprocessSymlinkCreation() && !action.isFilesetTree())) {
           try {
@@ -184,8 +184,8 @@ public final class SymlinkTreeStrategy implements SymlinkTreeActionContext {
   private static SymlinkTreeHelper createSymlinkTreeHelper(
       SymlinkTreeAction action, ActionExecutionContext actionExecutionContext) {
     return new SymlinkTreeHelper(
-        actionExecutionContext.getInputPath(action.getInputManifest()),
-        actionExecutionContext.getInputPath(action.getOutputManifest()).getParentDirectory(),
+        action.getInputManifest().getExecPath(),
+        action.getOutputManifest().getExecPath().getParentDirectory(),
         action.isFilesetTree());
   }
 
