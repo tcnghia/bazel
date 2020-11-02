@@ -22,14 +22,11 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
   HashInputStreamTest.class,
-  HttpConnectorMultiplexerIntegrationTest.class,
-  HttpConnectorMultiplexerTest.class,
   HttpConnectorTest.class,
   HttpDownloaderTest.class,
   HttpStreamTest.class,
   HttpUtilsTest.class,
   ProgressInputStreamTest.class,
   ProxyHelperTest.class,
-  RetryingInputStreamTest.class,
 })
 public class DownloaderTestSuite {}
